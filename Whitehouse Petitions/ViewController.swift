@@ -2,10 +2,26 @@ import UIKit
 
 class ViewController: UITableViewController {
     var petitions = [Petition]()
+    var filteredPetitions = [Petition]()
+    var clearFilterWords =  UIBarButtonItem()
+    var filterWords = UIBarButtonItem()
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Credits",
+                                                            style: .plain,
+                                                            target: self,
+                                                            action: #selector(credits))
+        clearFilterWords = UIBarButtonItem(title: "Clear search",
+                                      style: .plain,
+                                      target: self,
+                                      action: #selector(clearSearchPetitions))
+        filterWords = UIBarButtonItem(title: "Search",
+                                      style: .plain,
+                                      target: self,
+                                      action: #selector(searchPetitions))
+        navigationItem.leftBarButtonItem = filterWords
         let urlString: String
-        
         if navigationController?.tabBarItem.tag == 0 {
             urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
         } else {
@@ -19,24 +35,80 @@ class ViewController: UITableViewController {
         }
         showError()
     }
+    @objc func clearSearchPetitions() {
+        filteredPetitions.removeAll()
+        navigationItem.leftBarButtonItem = filterWords
+        tableView.reloadData()
+    }
+    @objc func searchPetitions() {
+        let ac = UIAlertController(title: "Filter petitions",
+                                   message: nil,
+                                   preferredStyle: .alert)
+        ac.addTextField()
+        let submitAction = UIAlertAction(title: "Submit", style: .default) {
+            [weak self,weak ac] action in
+            guard let word = ac?.textFields?[0].text else { return }
+            self?.submitWord(searchByWord: word)
+        }
+        ac.addAction(submitAction)
+        present(ac, animated: true)
+    }
+    func submitWord(searchByWord: String) {
+        let lowercasedWord = searchByWord.lowercased()
+        filteredPetitions.removeAll(keepingCapacity: true)
+        for petition in petitions {
+            if petition.title.lowercased().contains(lowercasedWord) {
+                filteredPetitions.append(petition)
+            }
+            else if petition.body.lowercased().contains(lowercasedWord) {
+                filteredPetitions.append(petition)
+            }
+        }
+        navigationItem.leftBarButtonItem = clearFilterWords
+        tableView.reloadData()
+    }
+    @objc func credits() {
+        let ac = UIAlertController(title: "Credits",
+                                   message: "Data comes from the We The People API of the Whitehouse.",
+                                   preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac, animated: true)
+    }
     func showError() {
-        let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
+        let ac = UIAlertController(title: "Loading error",
+                                   message: "There was a problem loading the feed; please check your connection and try again.",
+                                   preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
     }
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        petitions.count
+        if filteredPetitions.isEmpty {
+            return petitions.count
+        } else {
+            return filteredPetitions.count
+        }
     }
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell",for: indexPath)
-        let petition = petitions[indexPath.row]
-        cell.textLabel?.text = petition.title
-        cell.detailTextLabel?.text = petition.title
-        return cell
+        if filteredPetitions.isEmpty {
+            let petition = petitions[indexPath.row]
+            cell.textLabel?.text = petition.title
+            cell.detailTextLabel?.text = petition.title
+            return cell
+        } else {
+            let petition = filteredPetitions[indexPath.row]
+            cell.textLabel?.text = petition.title
+            cell.detailTextLabel?.text = petition.title
+            return cell
+        }
     }
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let vc = DetailViewController()
-        vc.detailItem = petitions[indexPath.row]
+        if filteredPetitions.isEmpty {
+            vc.detailItem = petitions[indexPath.row]
+        } else {
+            vc.detailItem = filteredPetitions[indexPath.row]
+        }
         navigationController?.pushViewController(vc, animated: true)
     }
     func parse(json: Data) {

@@ -56,7 +56,7 @@
         <scene sceneID="rB9-YV-MRs">
             <objects>
                 <navigationController storyboardIdentifier="NavController" automaticallyAdjustsScrollViewInsets="NO" id="gRC-iZ-fzd" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" systemItem="topRated" id="Sql-4A-es6"/>
+                    <tabBarItem key="tabBarItem" systemItem="recents" id="Sql-4A-es6"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="X8u-2B-yYj">
                         <rect key="frame" x="0.0" y="44" width="414" height="44"/>
