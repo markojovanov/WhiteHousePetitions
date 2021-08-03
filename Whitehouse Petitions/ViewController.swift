@@ -27,13 +27,16 @@ class ViewController: UITableViewController {
         } else {
             urlString = "https://www.hackingwithswift.com/samples/petitions-2.json"
         }
-        if let url = URL(string: urlString) {
-            if let data = try? Data(contentsOf: url) {
-                parse(json: data)
-                return
+        DispatchQueue.global(qos: .userInitiated).async {
+            [weak self ] in
+            if let url = URL(string: urlString) {
+                if let data = try? Data(contentsOf: url) {
+                    self?.parse(json: data)
+                    return
+                }
             }
+            self?.showError()
         }
-        showError()
     }
     @objc func clearSearchPetitions() {
         filteredPetitions.removeAll()
@@ -42,8 +45,8 @@ class ViewController: UITableViewController {
     }
     @objc func searchPetitions() {
         let ac = UIAlertController(title: "Filter petitions",
-                                   message: nil,
-                                   preferredStyle: .alert)
+                                    message: nil,
+                                    preferredStyle: .alert)
         ac.addTextField()
         let submitAction = UIAlertAction(title: "Submit", style: .default) {
             [weak self,weak ac] action in
@@ -54,18 +57,24 @@ class ViewController: UITableViewController {
         present(ac, animated: true)
     }
     func submitWord(searchByWord: String) {
-        let lowercasedWord = searchByWord.lowercased()
-        filteredPetitions.removeAll(keepingCapacity: true)
-        for petition in petitions {
-            if petition.title.lowercased().contains(lowercasedWord) {
-                filteredPetitions.append(petition)
-            }
-            else if petition.body.lowercased().contains(lowercasedWord) {
-                filteredPetitions.append(petition)
+        DispatchQueue.global(qos: .userInitiated).async {
+            [weak self] in
+            let lowercasedWord = searchByWord.lowercased()
+            self?.filteredPetitions.removeAll(keepingCapacity: true)
+            for petition in self!.petitions {
+                if petition.title.lowercased().contains(lowercasedWord) {
+                    self?.filteredPetitions.append(petition)
+                }
+                else if petition.body.lowercased().contains(lowercasedWord) {
+                    self?.filteredPetitions.append(petition)
+                }
             }
         }
         navigationItem.leftBarButtonItem = clearFilterWords
-        tableView.reloadData()
+        DispatchQueue.main.async {
+            [weak self] in
+            self?.tableView.reloadData()
+        }
     }
     @objc func credits() {
         let ac = UIAlertController(title: "Credits",
@@ -75,11 +84,14 @@ class ViewController: UITableViewController {
         present(ac, animated: true)
     }
     func showError() {
-        let ac = UIAlertController(title: "Loading error",
+        DispatchQueue.main.async {
+            [weak self] in
+            let ac = UIAlertController(title: "Loading error",
                                    message: "There was a problem loading the feed; please check your connection and try again.",
                                    preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
+            ac.addAction(UIAlertAction(title: "OK", style: .default))
+            self?.present(ac, animated: true)
+        }
     }
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if filteredPetitions.isEmpty {
@@ -115,7 +127,12 @@ class ViewController: UITableViewController {
         let jsonDecoder = JSONDecoder()
         if let jsonPetitons = try? jsonDecoder.decode(Petitions.self, from: json) {
             petitions = jsonPetitons.results
-            tableView.reloadData()
+            DispatchQueue.main.async {
+                [weak self] in
+                self?.tableView.reloadData()
+            }
+        } else {
+            showError()
         }
     }
 }
